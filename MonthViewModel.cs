@@ -55,12 +55,15 @@ namespace Win8PV
                 string month = reader[0];
                 string str = reader[1];
                 str = str.Replace("_s.jpg", "");
-                uint count = 0;
-                if (uint.TryParse(reader[2], out count))
+                if (!String.IsNullOrEmpty(str))
                 {
-                    Month m = new Month(month, str, count);
-                    Months.Add(m);
-                    Count += m.Count;
+                    uint count = 0;
+                    if (uint.TryParse(reader[2], out count))
+                    {
+                        Month m = new Month(month, str, count);
+                        Months.Add(m);
+                        Count += m.Count;
+                    }
                 }
                 await reader.ReadAsync();
             }

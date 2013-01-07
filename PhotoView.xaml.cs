@@ -65,6 +65,11 @@ namespace Win8PV
             base.OnPointerWheelChanged(e);
         }
 
+
+        private void xFlipView_SelectionChanged_1(object sender, SelectionChangedEventArgs e)
+        {
+        }
+
         /// <summary>
         /// Preserves state associated with this page in case the application is suspended or the
         /// page is discarded from the navigation cache.  Values must conform to the serialization
@@ -73,6 +78,16 @@ namespace Win8PV
         /// <param name="pageState">An empty dictionary to be populated with serializable state.</param>
         protected override void SaveState(Dictionary<String, Object> pageState)
         {
+        }
+    }
+
+    public class MyFlipView : FlipView
+    {
+        protected override void ClearContainerForItemOverride(DependencyObject element, object item)
+        {
+            OneImage oi = item as OneImage;
+            if (oi != null) oi.CancelAllActiveDownloads();
+            base.ClearContainerForItemOverride(element, item);
         }
     }
 }

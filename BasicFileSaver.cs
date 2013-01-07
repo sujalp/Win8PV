@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -12,16 +13,20 @@ namespace Win8PV
 {
     class BasicFileSaver
     {
-        private Uri m_uri;
+        private string m_subDirectory;
+        private string m_fileName;
         Stream m_s;
+        Uri m_DbgUri;
 
-        public BasicFileSaver(Uri u, Stream s)
+        public BasicFileSaver(string sd, string fn, Stream s, Uri u)
         {
-            m_uri = u;
+            m_subDirectory = sd;
+            m_fileName = fn;
             m_s = s;
+            m_DbgUri = u;
         }
 
-        private static async Task ReadWriteStreamAsync(Stream readStream, Stream writeStream, IProgress<ulong> progress)
+        private static async Task ReadWriteStreamAsync(Stream readStream, Stream writeStream, IProgress<ulong> progress, CancellationToken ct)
         {
             int Length = 1024;
             Byte[] buffer1 = new Byte[Length];
@@ -31,23 +36,23 @@ namespace Win8PV
             Task writertask;
             ulong total = 0;
 
-            bytesRead1 = await readStream.ReadAsync(buffer1, 0, Length);
+            bytesRead1 = await readStream.ReadAsync(buffer1, 0, Length, ct);
             bool keepgoing = bytesRead1 > 0;
 
             while (keepgoing)
             {
                 if (writebufferis1)
                 {
-                    writertask = writeStream.WriteAsync(buffer1, 0, bytesRead1);
+                    writertask = writeStream.WriteAsync(buffer1, 0, bytesRead1, ct);
                     total += (ulong)bytesRead1;
-                    bytesRead2 = await readStream.ReadAsync(buffer2, 0, Length);
+                    bytesRead2 = await readStream.ReadAsync(buffer2, 0, Length, ct);
                     keepgoing = bytesRead2 > 0;
                 }
                 else
                 {
-                    writertask = writeStream.WriteAsync(buffer2, 0, bytesRead2);
+                    writertask = writeStream.WriteAsync(buffer2, 0, bytesRead2, ct);
                     total += (ulong)bytesRead2;
-                    bytesRead1 = await readStream.ReadAsync(buffer1, 0, Length);
+                    bytesRead1 = await readStream.ReadAsync(buffer1, 0, Length, ct);
                     keepgoing = bytesRead1 > 0;
                 }
                 await writertask;
@@ -58,10 +63,10 @@ namespace Win8PV
             }
         }
 
-        public async Task<bool> SaveAsync(bool fBackup, IProgress<ulong> progress)
+        public async Task<bool> SaveAsync(bool fBackup, IProgress<ulong> progress, CancellationToken ct)
         {
-            string subdir = BasicFileDownloader.UriToSubDirectory(m_uri);
-            string fname = BasicFileDownloader.UriToFilename(m_uri) + (fBackup ? ".bak" : "");
+            string subdir = m_subDirectory;
+            string fname = m_fileName + (fBackup ? ".bak" : "");
             IStorageItem si = null;
             bool fSuccess = false;
             StorageFile sfile = null;
@@ -103,14 +108,17 @@ namespace Win8PV
                     {
                         using (Stream outstream = await sfile.OpenStreamForWriteAsync())
                         {
-                            await ReadWriteStreamAsync(m_s, outstream, progress);
+                            Debug.WriteLine(@"/\ Started " + m_DbgUri.AbsoluteUri);
+                            await ReadWriteStreamAsync(m_s, outstream, progress, ct);
                             await outstream.FlushAsync();
+                            Debug.WriteLine(@"/\ Finished " + m_DbgUri.AbsoluteUri);
                         }
                         fSuccess = true;
                     }
                 }
-                catch
+                catch (OperationCanceledException)
                 {
+                    m_s.Dispose();
                 }
             }
 

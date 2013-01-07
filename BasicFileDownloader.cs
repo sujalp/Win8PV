@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.Streams;
@@ -82,8 +84,8 @@ namespace Win8PV
                 if (hwresp.ResponseUri.AbsoluteUri == m_u.AbsoluteUri)
                 {
                     Stream stream = hwresp.GetResponseStream();
-                    BasicFileSaver bis = new BasicFileSaver(m_u, stream);
-                    fSaved = await bis.SaveAsync(true, null);
+                    BasicFileSaver bis = new BasicFileSaver(UriToSubDirectory(m_u), UriToFilename(m_u), stream, m_u);
+                    fSaved = await bis.SaveAsync(true, null, CancellationToken.None);
                 }
             }
             catch
@@ -93,6 +95,11 @@ namespace Win8PV
         }
 
         public async Task<IRandomAccessStream> DownloadAsync(IProgress<int> progress)
+        {
+            return await DownloadAsync(progress, CancellationToken.None);
+        }
+
+        public async Task<IRandomAccessStream> DownloadAsync(IProgress<int> progress, CancellationToken ct)
         {
             IRandomAccessStream iras = await DownloadAsyncFromFile(progress);
             if (iras != null)
@@ -114,7 +121,7 @@ namespace Win8PV
                         Stream stream = hwresp.GetResponseStream();
 
                         // Save the file out locally - note this moves the stream forward to the end
-                        BasicFileSaver bis = new BasicFileSaver(m_u, stream);
+                        BasicFileSaver bis = new BasicFileSaver(UriToSubDirectory(m_u), UriToFilename(m_u), stream, m_u);
                         Progress<ulong> newProgress = null;
                         if (progress != null)
                         {
@@ -125,7 +132,7 @@ namespace Win8PV
                                                             });
                         }
 
-                        fSaved = await bis.SaveAsync(false, newProgress);
+                        fSaved = await bis.SaveAsync(false, newProgress, ct);
                         if (progress != null)
                         {
                             progress.Report(100);

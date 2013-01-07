@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Win8PV.Common;
 using Windows.Storage.Streams;
@@ -12,6 +14,8 @@ namespace Win8PV
 {
     public class Image : BindableBase
     {
+        public uint DbgIndex { get; protected set; }
+
         private class DownloadItem
         {
             public DownloadItem(string subpath)
@@ -20,11 +24,13 @@ namespace Win8PV
                 ImageStream = null;
                 State = STATES.NOTSTARTED;
                 Size = SIZES.NONE;
+                CTS = null;
             }
             public string SubPath;
             public IRandomAccessStream ImageStream;
             public STATES State;
             public SIZES Size;
+            public CancellationTokenSource CTS;
         }
 
         private enum STATES { NOTSTARTED, ATTEMPTING, SUCCEEDED, FAILED };
@@ -83,6 +89,20 @@ namespace Win8PV
             }
         }
 
+        public void CancelAllActiveDownloads()
+        {
+            int i = 0;
+            foreach (var di in m_DownloadMap)
+            {
+                if (di.CTS != null)
+                {
+                    di.CTS.Cancel();
+                    Debug.WriteLine(@"/\ Image: " + DbgIndex + " Size: " + ((SIZES)i).ToString() + " - Aborted" + " " + ImagePath + di.SubPath);
+                }
+                i++;
+            }
+        }
+
         private void SetStream(DownloadItem di, IRandomAccessStream iras, SIZES size)
         {
             di.Size = (SIZES)size;
@@ -103,23 +123,34 @@ namespace Win8PV
             {
                 IRandomAccessStream st;
                 di.State = STATES.ATTEMPTING;
+                Debug.WriteLine(@"/\ Attempting Image: " + DbgIndex + " Size: " + size.ToString() + " " + ImagePath + di.SubPath);
+                di.CTS = new CancellationTokenSource();
                 Uri u = new Uri(ImagePath + di.SubPath, UriKind.Absolute);
                 BasicFileDownloader bidl = new BasicFileDownloader(u);
-                st = await bidl.DownloadAsync(progress);
+                st = await bidl.DownloadAsync(progress, di.CTS.Token);
                 if (st == null)
                 {
-                    di.State = STATES.FAILED;
+                    di.State = di.CTS.IsCancellationRequested ? STATES.NOTSTARTED : STATES.FAILED;
+                    if (di.CTS.IsCancellationRequested)
+                        Debug.WriteLine(@"/\ Cancelled Image: " + DbgIndex + " Size: " + size.ToString() + " " + ImagePath + di.SubPath);
+                    else
+                        Debug.WriteLine(@"/\ Failed Image: " + DbgIndex + " Size: " + size.ToString() + " " + ImagePath + di.SubPath);
+                    di.CTS = null;
                 }
                 else
                 {
-                    SetStream(di, st, size);
                     di.State = STATES.SUCCEEDED;
+                    di.CTS = null;
+                    Debug.WriteLine(@"/\ Finished Image: " + DbgIndex + " Size: " + size.ToString() + " " + ImagePath + di.SubPath);
+                    SetStream(di, st, size);
                 }
 
                 if (st != null)
                 {
                     for (int k = 0; k < (int)SIZES.TOTAL; k++)
                     {
+                        if (k == (int)size) continue;
+
                         di = m_DownloadMap[k];
 
                         switch (di.State)

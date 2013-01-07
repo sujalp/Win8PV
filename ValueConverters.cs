@@ -34,6 +34,13 @@ namespace Win8PV
 
     public sealed class StreamToBitmap : AbstractConverter
     {
+        private static BitmapImage s_stockBitmapImage;
+
+        static StreamToBitmap()
+        {
+            s_stockBitmapImage = new BitmapImage(new Uri("ms-appx:///Images/PlaceHolder.png"));
+        }
+
         public override object Convert(object value)
         {
             return Convert(value, "No");
@@ -43,7 +50,7 @@ namespace Win8PV
         {
             string sync = (string)parameter;
             bool fSync = sync == "Sync";
-            if (value == null) return null;
+            if (value == null) return s_stockBitmapImage;
             IRandomAccessStream s = value as IRandomAccessStream;
             IRandomAccessStream snew = s.CloneStream();
             BitmapImage bitmapImage = new BitmapImage();

@@ -98,15 +98,18 @@ namespace Win8PV
                 string year = reader[0];
                 string str = reader[1];
                 str = str.Replace("_s.jpg", "");
-                uint count = 0;
-                if (uint.TryParse(reader[2], out count))
+                if (!String.IsNullOrEmpty(str))
                 {
-                    Year y = new Year(year, str, count);
-                    if (FirstYear == null)
-                        FirstYear = y;
-                    else
-                        Years.Add(y);
-                    Count += y.Count;
+                    uint count = 0;
+                    if (uint.TryParse(reader[2], out count))
+                    {
+                        Year y = new Year(year, str, count);
+                        if (FirstYear == null)
+                            FirstYear = y;
+                        else
+                            Years.Add(y);
+                        Count += y.Count;
+                    }
                 }
                 await reader.ReadAsync();
             }

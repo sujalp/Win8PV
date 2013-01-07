@@ -9,10 +9,11 @@ namespace Win8PV
 {
     class OneImage : Image
     {
-        public OneImage(string title, string filepath)
+        public OneImage(string title, string filepath, uint dbgIndex)
         {
             Title = title;
             ImagePath = filepath;
+            DbgIndex = dbgIndex;
         }
 
         public string Title { get; set; }

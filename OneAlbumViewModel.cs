@@ -87,7 +87,7 @@ namespace Win8PV
                 string str = reader[0];
                 str = str.Replace(".jpg", "");
 
-                OneImage oi = new OneImage(phototitle, str);
+                OneImage oi = new OneImage(phototitle, str, Count);
                 AllImages.Add(oi);
                 if (char.ToUpper(main[0]) == 'Y')
                 {

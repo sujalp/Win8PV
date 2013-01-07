@@ -44,26 +44,29 @@
                      HorizontalAlignment="Center" VerticalAlignment="Top"
                      Maximum="{Binding AllImages.Count}"
                      Value="{Binding SelectedIndex, ElementName=xFlipView, Converter={StaticResource PlusOne}}"/>
-        <FlipView
+        <local:MyFlipView
             x:Name="xFlipView"
             Padding="10,140,10,10"
             Grid.RowSpan="2"
+            SelectionChanged="xFlipView_SelectionChanged_1"
             ItemsSource="{Binding AllImages}">
-            <FlipView.ItemTemplate>
+            <local:MyFlipView.ItemTemplate>
                 <DataTemplate>
                     <Grid>
-                        <Image Source="{Binding LargeSizeStream, Converter={StaticResource ConvertToBitmap}, ConverterParameter=Sync}">
-                            <Image.RenderTransform>
-                                <TranslateTransform x:Name="ImageXForm"/>
-                            </Image.RenderTransform>
-                        </Image>
+                        <!--<ScrollViewer ZoomMode="Enabled">-->
+                            <Image Source="{Binding LargeSizeStream, Converter={StaticResource ConvertToBitmap}, ConverterParameter=Sync}">
+                                <Image.RenderTransform>
+                                    <TranslateTransform x:Name="ImageXForm"/>
+                                </Image.RenderTransform>
+                            </Image>
+                        <!--</ScrollViewer>-->
                         <ProgressBar Value="{Binding LargeProgressPercent}" VerticalAlignment="Bottom"
                                      Visibility="{Binding LargeProgressPercent, Converter={StaticResource Not0Not100}}"/>
                     </Grid>
                 </DataTemplate>
-            </FlipView.ItemTemplate>
-        </FlipView>
-
+            </local:MyFlipView.ItemTemplate>
+        </local:MyFlipView>
+        
         <!-- Back button and page title -->
         <Grid VerticalAlignment="Bottom">
             <Grid.ColumnDefinitions>
